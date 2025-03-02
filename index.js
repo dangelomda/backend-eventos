@@ -1,11 +1,7 @@
-require('dotenv').config();
 const express = require('express');
 const { Sequelize, DataTypes } = require('sequelize');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Configuração do banco de dados
+// 🔹 Conectar ao PostgreSQL usando a variável de ambiente
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   dialectOptions: {
@@ -16,14 +12,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   }
 });
 
-// Testar conexão com o banco
-sequelize.authenticate()
-  .then(() => console.log('✅ Conectado ao PostgreSQL com sucesso!'))
-  .catch(err => console.error('❌ Erro ao conectar ao banco:', err));
-
-app.use(express.json()); // Suporte para JSON no body das requisições
-
-// Definição do modelo de Evento
+// 🔹 Definição dos modelos do banco de dados
 const Evento = sequelize.define('Evento', {
   nome: { type: DataTypes.STRING, allowNull: false },
   descricao: { type: DataTypes.TEXT },
@@ -35,80 +24,64 @@ const Evento = sequelize.define('Evento', {
   timestamps: false
 });
 
-// Definição do modelo de Lab
 const Lab = sequelize.define('Lab', {
   nome: { type: DataTypes.STRING, allowNull: false },
   descricao: { type: DataTypes.TEXT },
+  horario_inicio: { type: DataTypes.DATE, allowNull: false },
+  horario_fim: { type: DataTypes.DATE, allowNull: false },
   evento_id: { type: DataTypes.INTEGER, allowNull: false }
 }, {
   tableName: 'labs',
   timestamps: false
 });
 
-// Definir relação entre Evento e Lab
-Lab.belongsTo(Evento, { foreignKey: 'evento_id' });
-Evento.hasMany(Lab, { foreignKey: 'evento_id' });
+// 🔹 Inicializando o Express
+const app = express();
+app.use(express.json());
 
-// Criar um Lab (POST /labs)
-app.post('/labs', async (req, res) => {
-  try {
-    const { nome, descricao, evento_id } = req.body;
-    
-    // Verifica se o evento existe antes de criar o Lab
-    const evento = await Evento.findByPk(evento_id);
-    if (!evento) {
-      return res.status(404).json({ error: "Evento não encontrado" });
-    }
+// 🔹 Teste de conexão com o banco
+sequelize.authenticate()
+  .then(() => console.log("✅ Conectado ao PostgreSQL com sucesso!"))
+  .catch(err => console.error("❌ Erro ao conectar ao PostgreSQL:", err));
 
-    const lab = await Lab.create({ nome, descricao, evento_id });
-    res.status(201).json(lab);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar Lab', detalhes: error.message });
-  }
+// 🔹 Rota Principal (Teste)
+app.get('/', (req, res) => {
+  res.send('🚀 API do sistema de eventos rodando!');
 });
 
-// Listar todos os Labs (GET /labs)
-app.get('/labs', async (req, res) => {
-  try {
-    const labs = await Lab.findAll({ include: Evento });
-    res.json(labs);
-  } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar Labs', detalhes: error.message });
-  }
+// 🔹 Rotas de Eventos
+app.get('/eventos', async (req, res) => {
+  const eventos = await Evento.findAll();
+  res.json(eventos);
 });
 
-
-// Criar um evento (POST /eventos)
 app.post('/eventos', async (req, res) => {
   try {
-    const { nome, descricao, data_inicio, data_fim, imagem_url } = req.body;
-    const evento = await Evento.create({ nome, descricao, data_inicio, data_fim, imagem_url });
+    const evento = await Evento.create(req.body);
     res.status(201).json(evento);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao criar evento', detalhes: error.message });
+    res.status(500).json({ error: "Erro ao criar evento", detalhes: error.message });
   }
 });
 
-// Listar todos os eventos (GET /eventos)
-app.get('/eventos', async (req, res) => {
+// 🔹 Rotas de Labs
+app.get('/labs', async (req, res) => {
+  const labs = await Lab.findAll();
+  res.json(labs);
+});
+
+app.post('/labs', async (req, res) => {
   try {
-    const eventos = await Evento.findAll();
-    res.json(eventos);
+    console.log("Recebendo dados do Lab:", req.body); // Debug
+    const lab = await Lab.create(req.body);
+    res.status(201).json(lab);
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao buscar eventos', detalhes: error.message });
+    res.status(500).json({ error: "Erro ao criar Lab", detalhes: error.message });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('API do sistema de eventos rodando!');
+// 🔹 Inicializar Servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
-
-app.listen(PORT, async () => {
-  try {
-    await sequelize.sync(); // Sincroniza os modelos com o banco de dados
-    console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  } catch (error) {
-    console.error('Erro ao sincronizar modelos:', error);
-  }
-});
-
