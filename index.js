@@ -1,87 +1,111 @@
-const express = require('express');
-const { Sequelize, DataTypes } = require('sequelize');
+const express = require("express");
+const { Sequelize, DataTypes } = require("sequelize");
+const cors = require("cors");
+require("dotenv").config();
 
-// 🔹 Conectar ao PostgreSQL usando a variável de ambiente
+const app = express();
+const port = 8080;
+
+app.use(cors());
+app.use(express.json());
+
+// Configuração do banco de dados PostgreSQL
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
-  dialect: 'postgres',
+  dialect: "postgres",
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false
+      rejectUnauthorized: false,
+    },
+  },
+});
+
+// Definição do modelo Participante
+const Participante = sequelize.define("participante", {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  nome: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true,
+  },
+  telefone: {
+    type: DataTypes.STRING(20),
+  },
+});
+
+// Sincronizar o banco de dados
+sequelize
+  .sync()
+  .then(() => console.log("\u2705 Banco de Dados sincronizado!"))
+  .catch((err) => console.error("Erro ao sincronizar o banco de dados", err));
+
+// Rotas da API
+app.post("/participantes", async (req, res) => {
+  try {
+    const { nome, email, telefone } = req.body;
+    const novoParticipante = await Participante.create({ nome, email, telefone });
+    res.status(201).json(novoParticipante);
+  } catch (error) {
+    res.status(400).json({ error: "Erro ao criar participante", detalhes: error.message });
+  }
+});
+
+app.get("/participantes", async (req, res) => {
+  try {
+    const participantes = await Participante.findAll();
+    res.json(participantes);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar participantes", detalhes: error.message });
+  }
+});
+
+app.get("/participantes/:id", async (req, res) => {
+  try {
+    const participante = await Participante.findByPk(req.params.id);
+    if (!participante) {
+      return res.status(404).json({ error: "Participante não encontrado" });
     }
-  }
-});
-
-// 🔹 Definição dos modelos do banco de dados
-const Evento = sequelize.define('Evento', {
-  nome: { type: DataTypes.STRING, allowNull: false },
-  descricao: { type: DataTypes.TEXT },
-  data_inicio: { type: DataTypes.DATE, allowNull: false },
-  data_fim: { type: DataTypes.DATE, allowNull: false },
-  imagem_url: { type: DataTypes.STRING }
-}, {
-  tableName: 'eventos',
-  timestamps: false
-});
-
-const Lab = sequelize.define('Lab', {
-  nome: { type: DataTypes.STRING, allowNull: false },
-  descricao: { type: DataTypes.TEXT },
-  horario_inicio: { type: DataTypes.DATE, allowNull: false },
-  horario_fim: { type: DataTypes.DATE, allowNull: false },
-  evento_id: { type: DataTypes.INTEGER, allowNull: false }
-}, {
-  tableName: 'labs',
-  timestamps: false
-});
-
-// 🔹 Inicializando o Express
-const app = express();
-app.use(express.json());
-
-// 🔹 Teste de conexão com o banco
-sequelize.authenticate()
-  .then(() => console.log("✅ Conectado ao PostgreSQL com sucesso!"))
-  .catch(err => console.error("❌ Erro ao conectar ao PostgreSQL:", err));
-
-// 🔹 Rota Principal (Teste)
-app.get('/', (req, res) => {
-  res.send('🚀 API do sistema de eventos rodando!');
-});
-
-// 🔹 Rotas de Eventos
-app.get('/eventos', async (req, res) => {
-  const eventos = await Evento.findAll();
-  res.json(eventos);
-});
-
-app.post('/eventos', async (req, res) => {
-  try {
-    const evento = await Evento.create(req.body);
-    res.status(201).json(evento);
+    res.json(participante);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao criar evento", detalhes: error.message });
+    res.status(500).json({ error: "Erro ao buscar participante", detalhes: error.message });
   }
 });
 
-// 🔹 Rotas de Labs
-app.get('/labs', async (req, res) => {
-  const labs = await Lab.findAll();
-  res.json(labs);
-});
-
-app.post('/labs', async (req, res) => {
+app.put("/participantes/:id", async (req, res) => {
   try {
-    console.log("Recebendo dados do Lab:", req.body); // Debug
-    const lab = await Lab.create(req.body);
-    res.status(201).json(lab);
+    const { nome, email, telefone } = req.body;
+    const participante = await Participante.findByPk(req.params.id);
+    if (!participante) {
+      return res.status(404).json({ error: "Participante não encontrado" });
+    }
+    await participante.update({ nome, email, telefone });
+    res.json(participante);
   } catch (error) {
-    res.status(500).json({ error: "Erro ao criar Lab", detalhes: error.message });
+    res.status(500).json({ error: "Erro ao atualizar participante", detalhes: error.message });
   }
 });
 
-// 🔹 Inicializar Servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+app.delete("/participantes/:id", async (req, res) => {
+  try {
+    const participante = await Participante.findByPk(req.params.id);
+    if (!participante) {
+      return res.status(404).json({ error: "Participante não encontrado" });
+    }
+    await participante.destroy();
+    res.json({ message: "Participante removido com sucesso" });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao excluir participante", detalhes: error.message });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`\uD83C\uDF89 Servidor rodando na porta ${port}`);
 });
