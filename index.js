@@ -35,6 +35,49 @@ const Evento = sequelize.define('Evento', {
   timestamps: false
 });
 
+// Definição do modelo de Lab
+const Lab = sequelize.define('Lab', {
+  nome: { type: DataTypes.STRING, allowNull: false },
+  descricao: { type: DataTypes.TEXT },
+  evento_id: { type: DataTypes.INTEGER, allowNull: false }
+}, {
+  tableName: 'labs',
+  timestamps: false
+});
+
+// Definir relação entre Evento e Lab
+Lab.belongsTo(Evento, { foreignKey: 'evento_id' });
+Evento.hasMany(Lab, { foreignKey: 'evento_id' });
+
+// Criar um Lab (POST /labs)
+app.post('/labs', async (req, res) => {
+  try {
+    const { nome, descricao, evento_id } = req.body;
+    
+    // Verifica se o evento existe antes de criar o Lab
+    const evento = await Evento.findByPk(evento_id);
+    if (!evento) {
+      return res.status(404).json({ error: "Evento não encontrado" });
+    }
+
+    const lab = await Lab.create({ nome, descricao, evento_id });
+    res.status(201).json(lab);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar Lab', detalhes: error.message });
+  }
+});
+
+// Listar todos os Labs (GET /labs)
+app.get('/labs', async (req, res) => {
+  try {
+    const labs = await Lab.findAll({ include: Evento });
+    res.json(labs);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar Labs', detalhes: error.message });
+  }
+});
+
+
 // Criar um evento (POST /eventos)
 app.post('/eventos', async (req, res) => {
   try {
