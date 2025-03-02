@@ -18,17 +18,10 @@ const Participante = sequelize.define("Participante", {
   },
   telefone: {
     type: DataTypes.STRING,
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
   }
 }, {
-  timestamps: true  // Agora o Sequelize vai entender que essas colunas existem
+  timestamps: false, // 🔴 Desativa a criação automática de createdAt e updatedAt
+  freezeTableName: true // 🔴 Garante que o Sequelize não tente renomear a tabela
 });
 
 module.exports = Participante;
