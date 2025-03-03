@@ -69,4 +69,43 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
+// Atualizar uma inscrição (Trocar de Lab)
+router.put("/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { novo_lab_id } = req.body;
+
+        const inscricao = await Inscricao.findByPk(id);
+        if (!inscricao) {
+            return res.status(404).json({ error: "Inscrição não encontrada." });
+        }
+
+        // 🔹 Verifica se o novo Lab existe
+        const novoLab = await Lab.findByPk(novo_lab_id);
+        if (!novoLab) {
+            return res.status(400).json({ error: "Novo Lab não encontrado." });
+        }
+
+        // 🔹 Verifica se o participante já está inscrito em outro Lab no mesmo período
+        const conflito = await Inscricao.findOne({
+            where: {
+                participante_id: inscricao.participante_id,
+                periodo: inscricao.periodo,
+                lab_id: novo_lab_id
+            }
+        });
+        if (conflito) {
+            return res.status(400).json({ error: "Participante já está inscrito neste Lab no mesmo período." });
+        }
+
+        // 🔹 Atualiza a inscrição com o novo Lab
+        inscricao.lab_id = novo_lab_id;
+        await inscricao.save();
+
+        res.json(inscricao);
+    } catch (error) {
+        res.status(500).json({ error: "Erro ao atualizar inscrição", detalhes: error.message });
+    }
+});
+
 module.exports = router;
