@@ -30,6 +30,10 @@ const Lab = sequelize.define("Lab", {
       model: Evento,
       key: "id"
     }
+  },
+  limite_vagas: {  // 🔹 Adicionando o campo de limite de vagas
+    type: DataTypes.INTEGER,
+    allowNull: true,  // Pode ser nulo (vagas ilimitadas)
   }
 }, {
   timestamps: false,

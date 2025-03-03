@@ -1,9 +1,8 @@
 const { DataTypes } = require("sequelize");
 const sequelize = require("../config/database");
 const Participante = require("./Participante");
-const Lab = require("./Lab");
 
-const Inscricao = sequelize.define("Inscricao", {
+const Checkin = sequelize.define("Checkin", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -17,25 +16,17 @@ const Inscricao = sequelize.define("Inscricao", {
       key: "id",
     },
   },
-  lab_id: {
-    type: DataTypes.INTEGER,
+  data_checkin: {
+    type: DataTypes.DATE,
     allowNull: false,
-    references: {
-      model: Lab,
-      key: "id",
-    },
-  },
-  periodo: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
+    defaultValue: DataTypes.NOW,
   }
 }, {
   timestamps: false,
   freezeTableName: true,
 });
 
-// 🔹 Definição das associações
-Inscricao.belongsTo(Participante, { foreignKey: "participante_id" });
-Inscricao.belongsTo(Lab, { foreignKey: "lab_id" });
+// Relacionamento
+Checkin.belongsTo(Participante, { foreignKey: "participante_id" });
 
-module.exports = Inscricao;
+module.exports = Checkin;

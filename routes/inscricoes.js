@@ -4,7 +4,7 @@ const Inscricao = require("../models/Inscricao");
 const Participante = require("../models/Participante");
 const Lab = require("../models/Lab");
 
-// Criar uma inscrição com validações
+// Criar uma inscrição com validações, incluindo limite de vagas
 router.post("/", async (req, res) => {
     try {
         const { participante_id, lab_id, periodo } = req.body;
@@ -19,6 +19,14 @@ router.post("/", async (req, res) => {
         const lab = await Lab.findByPk(lab_id);
         if (!lab) {
             return res.status(400).json({ error: "Lab não encontrado." });
+        }
+
+        // 🔹 Verifica se o Lab tem limite de vagas e se já atingiu esse limite
+        if (lab.limite_vagas !== null) { // Se houver limite de vagas
+            const inscritosNoLab = await Inscricao.count({ where: { lab_id } });
+            if (inscritosNoLab >= lab.limite_vagas) {
+                return res.status(400).json({ error: "Este Lab já atingiu o limite de vagas." });
+            }
         }
 
         // 🔹 Verifica se já existe uma inscrição para esse participante no mesmo período
@@ -42,69 +50,26 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Listar todas as inscrições
+// Listar todas as inscrições com nomes completos
 router.get("/", async (req, res) => {
     try {
-        const inscricoes = await Inscricao.findAll();
-        res.json(inscricoes);
+        const inscricoes = await Inscricao.findAll({
+            include: [
+                { model: Participante, attributes: ["nome"] },
+                { model: Lab, attributes: ["nome"] }
+            ]
+        });
+
+        const resultadoFormatado = inscricoes.map(inscricao => ({
+            id: inscricao.id,
+            participante: inscricao.Participante.nome,
+            lab: inscricao.Lab.nome,
+            periodo: inscricao.periodo
+        }));
+
+        res.json(resultadoFormatado);
     } catch (error) {
         res.status(500).json({ error: "Erro ao listar inscrições", detalhes: error.message });
-    }
-});
-
-// Deletar uma inscrição
-router.delete("/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const inscricao = await Inscricao.findByPk(id);
-
-        if (!inscricao) {
-            return res.status(404).json({ error: "Inscrição não encontrada." });
-        }
-
-        await inscricao.destroy();
-        res.json({ message: "Inscrição removida com sucesso." });
-    } catch (error) {
-        res.status(500).json({ error: "Erro ao remover inscrição", detalhes: error.message });
-    }
-});
-
-// Atualizar uma inscrição (Trocar de Lab)
-router.put("/:id", async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { novo_lab_id } = req.body;
-
-        const inscricao = await Inscricao.findByPk(id);
-        if (!inscricao) {
-            return res.status(404).json({ error: "Inscrição não encontrada." });
-        }
-
-        // 🔹 Verifica se o novo Lab existe
-        const novoLab = await Lab.findByPk(novo_lab_id);
-        if (!novoLab) {
-            return res.status(400).json({ error: "Novo Lab não encontrado." });
-        }
-
-        // 🔹 Verifica se o participante já está inscrito em outro Lab no mesmo período
-        const conflito = await Inscricao.findOne({
-            where: {
-                participante_id: inscricao.participante_id,
-                periodo: inscricao.periodo,
-                lab_id: novo_lab_id
-            }
-        });
-        if (conflito) {
-            return res.status(400).json({ error: "Participante já está inscrito neste Lab no mesmo período." });
-        }
-
-        // 🔹 Atualiza a inscrição com o novo Lab
-        inscricao.lab_id = novo_lab_id;
-        await inscricao.save();
-
-        res.json(inscricao);
-    } catch (error) {
-        res.status(500).json({ error: "Erro ao atualizar inscrição", detalhes: error.message });
     }
 });
 

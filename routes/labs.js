@@ -23,4 +23,25 @@ router.get("/", async (req, res) => {
   }
 });
 
+// 📌 Atualizar um Lab (definir limite de vagas)
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limite_vagas } = req.body;
+
+    const lab = await Lab.findByPk(id);
+    if (!lab) {
+      return res.status(404).json({ error: "Lab não encontrado." });
+    }
+
+    // 🔹 Atualiza o limite de vagas
+    lab.limite_vagas = limite_vagas;
+    await lab.save();
+
+    res.json({ message: "Lab atualizado com sucesso.", lab });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao atualizar Lab", detalhes: error.message });
+  }
+});
+
 module.exports = router;

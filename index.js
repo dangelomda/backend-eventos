@@ -6,6 +6,7 @@ const participantesRoutes = require("./routes/participantes"); // ✅ Importa as
 const eventosRoutes = require("./routes/eventos"); // ✅ Importa as rotas de eventos
 const labsRoutes = require("./routes/labs"); // ✅ Importa as rotas de labs
 const inscricoesRoutes = require("./routes/inscricoes");
+const checkinsRoutes = require("./routes/checkins"); // 🔹 Importa a rota de check-in
 
 
 const app = express();
@@ -19,6 +20,8 @@ app.use("/participantes", participantesRoutes);
 app.use("/eventos", eventosRoutes);
 app.use("/labs", labsRoutes);
 app.use("/inscricoes", inscricoesRoutes);
+app.use("/checkins", checkinsRoutes);
+
 
 
 console.log("📌 Sincronizando banco de dados...");
