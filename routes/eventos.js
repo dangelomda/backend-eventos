@@ -61,4 +61,22 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// 📌 Rota para excluir um evento por ID
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const evento = await Evento.findByPk(id);
+    
+    if (!evento) {
+      return res.status(404).json({ error: "Evento não encontrado" });
+    }
+
+    await evento.destroy();
+    res.json({ message: "Evento excluído com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao excluir evento", detalhes: error.message });
+  }
+});
+
+
 module.exports = router;
