@@ -5,9 +5,14 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialectOptions: {
     ssl: {
       require: true,
-      rejectUnauthorized: false
-    }
-  }
+      rejectUnauthorized: false,
+    },
+    charset: "utf8",
+  },
+  define: {
+    charset: "utf8",
+    collate: "utf8_general_ci",
+  },
 });
 
 // 🔹 Força a sincronização do banco, garantindo que a estrutura esteja atualizada
