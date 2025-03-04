@@ -45,4 +45,20 @@ router.get("/", async (req, res) => {
   }
 });
 
+// 📌 Nova Rota: Buscar Evento por ID
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const evento = await Evento.findByPk(id); // Busca evento pelo ID
+
+    if (!evento) {
+      return res.status(404).json({ error: "Evento não encontrado" });
+    }
+
+    res.json(evento);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar evento", detalhes: error.message });
+  }
+});
+
 module.exports = router;
